@@ -1,0 +1,59 @@
+// qdrant_rag.v1 search service.
+// Field numbers are stable across releases. Do not renumber or remove fields
+// without bumping the package version (qdrant_rag.v1 -> qdrant_rag.v2).
+
+syntax = "proto3";
+
+package qdrant_rag.v1;
+
+service VectorSearch {
+  rpc Search(SearchRequest) returns (SearchResponse);
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+message SearchRequest {
+  string tenant_id = 1;
+  string bot_id = 2;
+  string query = 3;
+  int32 top_k = 4;
+  Filters filters = 5;
+}
+
+message Filters {
+  repeated string source_types = 1;
+  repeated string tags = 2;
+  string category = 3;
+  bool only_active = 4;
+}
+
+message SearchResponse {
+  repeated Chunk chunks = 1;
+  int32 total_candidates = 2;
+  float threshold_used = 3;
+}
+
+message Chunk {
+  reserved 7, 10, 11;
+  reserved "section_title", "category", "tags";
+
+  string chunk_id = 1;
+  string doc_id = 2;
+  string text = 3;
+  string source_type = 4;
+  string source_filename = 5;
+  string source_url = 6;
+  // 7 reserved (was section_title)
+  repeated string section_path = 8;
+  int32 page_number = 9;
+  // 10 reserved (was category)
+  // 11 reserved (was tags)
+  float score = 12;
+}
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  bool qdrant_ok = 1;
+  bool embedder_loaded = 2;
+  string version = 3;
+}

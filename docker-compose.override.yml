@@ -1,0 +1,28 @@
+services:
+  web:
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             exec python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/app
+      - /app/.venv
+      - ./.bge_cache:/app/.cache/bge
+    environment:
+      DJANGO_DEBUG: "True"
+    restart: "no"
+
+  postgres:
+    ports:
+      - "5432:5432"
+    restart: "no"
+
+  redis:
+    ports:
+      - "6379:6379"
+    restart: "no"
+
+  worker:
+    volumes:
+      - .:/app
+      - /app/.venv
+    restart: "no"

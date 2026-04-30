@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# BGE-M3 model cache (host bind mount)
+.bge_cache/
+
+# Env
+.env
+.env.local
+
+# Django
+*.log
+db.sqlite3
+staticfiles/
+media/
+
+# uv
+# (uv.lock IS committed)
+
+# Docker
+.docker/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# gRPC generated stubs (Phase 7)
+apps/grpc_service/generated/
+.venv.broken-by-compose/
+
+# Orphan caches / runtime artifacts
+.cache/
+/var/log/qdrant_rag_bootstrap.log
+backups/
+
+# Local secrets / per-deploy files
+*.pem
+*.key
+secrets/
+
+# Editor swap files
+*.swp
+*~

@@ -1,0 +1,97 @@
+# nginx reverse-proxy template for qdrant_rag — Phase 8b
+#
+# Copy + EDIT for your domain/certs/internal-IP-ranges, then drop into
+# /etc/nginx/conf.d/qdrant_rag.conf (note: rename — *.example does NOT auto-load).
+#
+# Required edits:
+#   - server_name lines (qdrant.your-domain.com / grpc.your-domain.com)
+#   - ssl_certificate / ssl_certificate_key paths
+#   - /metrics location: replace 10.0.0.0/8 etc. with your scraper IP range
+#
+# Verify after install:
+#   sudo nginx -t && sudo systemctl reload nginx
+
+upstream qdrant_rag_http {
+    server 127.0.0.1:8080;
+}
+
+upstream qdrant_rag_grpc {
+    server 127.0.0.1:50051;
+}
+
+# ───── HTTP (port 443) ─────────────────────────────────────────────────
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name qdrant.your-domain.com;
+
+    ssl_certificate     /etc/letsencrypt/live/qdrant.your-domain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/qdrant.your-domain.com/privkey.pem;
+
+    client_max_body_size 50m;
+    proxy_read_timeout 120s;
+    proxy_connect_timeout 30s;
+    proxy_send_timeout 120s;
+
+    # /metrics: internal scrapers only. Adjust ranges to your network.
+    location /metrics {
+        allow 10.0.0.0/8;
+        allow 192.168.0.0/16;
+        allow 172.16.0.0/12;
+        deny all;
+        proxy_pass http://qdrant_rag_http;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    location /healthz {
+        access_log off;
+        proxy_pass http://qdrant_rag_http;
+        proxy_set_header Host $host;
+    }
+
+    location / {
+        proxy_pass http://qdrant_rag_http;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Request-ID $request_id;
+    }
+}
+
+# Optional: HTTP→HTTPS redirect
+server {
+    listen 80;
+    server_name qdrant.your-domain.com;
+    return 301 https://$host$request_uri;
+}
+
+# ───── gRPC (port 50443) ───────────────────────────────────────────────
+# NOTE: gRPC requires HTTP/2; use grpc_pass (NOT proxy_pass).
+server {
+    listen 50443 ssl;
+    http2 on;
+    server_name grpc.your-domain.com;
+
+    ssl_certificate     /etc/letsencrypt/live/grpc.your-domain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/grpc.your-domain.com/privkey.pem;
+
+    grpc_read_timeout 120s;
+    grpc_send_timeout 120s;
+    grpc_connect_timeout 30s;
+    client_max_body_size 50m;
+
+    location / {
+        grpc_pass grpc://qdrant_rag_grpc;
+        error_page 502 = /error502grpc;
+    }
+
+    location = /error502grpc {
+        internal;
+        default_type application/grpc;
+        add_header grpc-status 14;
+        add_header grpc-message "upstream unavailable";
+        return 204;
+    }
+}

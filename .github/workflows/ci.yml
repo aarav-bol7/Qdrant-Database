@@ -1,0 +1,50 @@
+name: CI
+
+# Phase 8b: SQLite overlay matches `make test` locally; no Postgres or Qdrant
+# service containers needed for the host suite. Embedder-loading tests skipped
+# via -m 'not embedder'.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  lint-and-test:
+    name: Lint + Tests (SQLite)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv + Python 3.13
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.13"
+          enable-cache: true
+
+      - name: Cache uv venv + tool cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            .venv
+          key: uv-${{ runner.os }}-${{ hashFiles('uv.lock', 'pyproject.toml') }}
+
+      - name: Install deps
+        run: uv sync --frozen
+
+      - name: Ruff lint
+        run: uv run ruff check .
+
+      - name: Ruff format check
+        run: uv run ruff format --check .
+
+      - name: Migrations check
+        env:
+          DJANGO_SETTINGS_MODULE: tests.test_settings
+        run: uv run python manage.py makemigrations --check --dry-run
+
+      - name: Pytest (excluding embedder-loading tests)
+        env:
+          DJANGO_SETTINGS_MODULE: tests.test_settings
+        run: uv run pytest -v -m 'not embedder' --maxfail=10

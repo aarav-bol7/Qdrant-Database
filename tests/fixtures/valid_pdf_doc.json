@@ -1,0 +1,17 @@
+{
+  "source_type": "pdf",
+  "source_filename": "refund_policy.pdf",
+  "content_hash": "sha256:a3f8c4b1e2",
+  "items": [
+    {
+      "content": "We offer a full refund if your pizza arrives cold, provided you notify us within 20 minutes of delivery. Please reply with your order number and a photo of the pizza. Our customer support team will process your refund within 3-5 business days.",
+      "section_path": ["Refund Policy", "Cold Pizza Returns"],
+      "page_number": 1
+    },
+    {
+      "content": "If you receive the wrong order, you can request a full refund or a replacement at no charge. Contact our support team within 30 minutes of delivery and provide your order number along with a photo of the incorrect items.",
+      "section_path": ["Refund Policy", "Wrong Order"],
+      "page_number": 2
+    }
+  ]
+}
