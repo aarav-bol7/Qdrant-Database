@@ -13,3 +13,4 @@ docker-compose*.yml
 build_prompts
 README.md
 rag_system_guide.md
+.bge_cache/
