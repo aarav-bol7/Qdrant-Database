@@ -22,3 +22,8 @@ class InvalidIdentifierError(ValueError):
 def validate_slug(value: str, *, field_name: str = "identifier") -> None:
     if not isinstance(value, str) or not SLUG_REGEX.fullmatch(value):
         raise InvalidIdentifierError(f"{field_name} {value!r} does not match {SLUG_PATTERN}")
+
+
+def normalize_slug(value: str) -> str:
+    # Accept UUID form (with hyphens) and return the canonical slug form.
+    return value.replace("-", "") if isinstance(value, str) else value

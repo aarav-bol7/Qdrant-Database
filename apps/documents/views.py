@@ -17,7 +17,7 @@ from apps.core.middleware import set_request_context
 from apps.documents.exceptions import ConcurrentUploadError, UploadError
 from apps.documents.serializers import SearchRequestSerializer, UploadBodySerializer
 from apps.ingestion.pipeline import DeletePipeline, UploadPipeline, UploadResult
-from apps.tenants.validators import InvalidIdentifierError, validate_slug
+from apps.tenants.validators import InvalidIdentifierError, normalize_slug, validate_slug
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +30,8 @@ class UploadDocumentView(APIView):
         doc_id_str: str | None = None
         try:
             try:
+                tenant_id = normalize_slug(tenant_id)
+                bot_id = normalize_slug(bot_id)
                 validate_slug(tenant_id, field_name="tenant_id")
                 validate_slug(bot_id, field_name="bot_id")
             except InvalidIdentifierError as exc:
@@ -154,6 +156,8 @@ class DeleteDocumentView(APIView):
         doc_id_str = str(doc_id)
         try:
             try:
+                tenant_id = normalize_slug(tenant_id)
+                bot_id = normalize_slug(bot_id)
                 validate_slug(tenant_id, field_name="tenant_id")
                 validate_slug(bot_id, field_name="bot_id")
             except InvalidIdentifierError as exc:
@@ -243,6 +247,8 @@ class SearchDocumentsView(APIView):
         started = time.monotonic()
         try:
             try:
+                tenant_id = normalize_slug(tenant_id)
+                bot_id = normalize_slug(bot_id)
                 validate_slug(tenant_id, field_name="tenant_id")
                 validate_slug(bot_id, field_name="bot_id")
             except InvalidIdentifierError as exc:

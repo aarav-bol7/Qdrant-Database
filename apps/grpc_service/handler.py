@@ -17,7 +17,7 @@ from apps.qdrant_core.search import (
     CollectionNotFoundError,
     search,
 )
-from apps.tenants.validators import InvalidIdentifierError, validate_slug
+from apps.tenants.validators import InvalidIdentifierError, normalize_slug, validate_slug
 
 logger = logging.getLogger(__name__)
 
@@ -64,9 +64,11 @@ class VectorSearchService(search_pb2_grpc.VectorSearchServicer):
     def Search(self, request, context):  # noqa: N802
         started = time.monotonic()
 
+        tenant_id = normalize_slug(request.tenant_id)
+        bot_id = normalize_slug(request.bot_id)
         try:
-            validate_slug(request.tenant_id, field_name="tenant_id")
-            validate_slug(request.bot_id, field_name="bot_id")
+            validate_slug(tenant_id, field_name="tenant_id")
+            validate_slug(bot_id, field_name="bot_id")
         except InvalidIdentifierError as exc:
             context.abort(grpc.StatusCode.INVALID_ARGUMENT, str(exc))
 
@@ -93,8 +95,8 @@ class VectorSearchService(search_pb2_grpc.VectorSearchServicer):
 
         try:
             result = search(
-                tenant_id=request.tenant_id,
-                bot_id=request.bot_id,
+                tenant_id=tenant_id,
+                bot_id=bot_id,
                 query=query,
                 top_k=top_k,
                 source_types=source_types,
@@ -120,8 +122,8 @@ class VectorSearchService(search_pb2_grpc.VectorSearchServicer):
         logger.info(
             "search_succeeded",
             extra={
-                "tenant_id": request.tenant_id,
-                "bot_id": request.bot_id,
+                "tenant_id": tenant_id,
+                "bot_id": bot_id,
                 "query_length": len(query),
                 "top_k_requested": top_k,
                 "results_returned": len(result["chunks"]),
