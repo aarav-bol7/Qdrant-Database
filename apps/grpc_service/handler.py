@@ -154,10 +154,12 @@ class VectorSearchService(search_pb2_grpc.VectorSearchServicer):
 
     @_record_metrics("HealthCheck")
     def HealthCheck(self, request, context):  # noqa: N802
-        from apps.ingestion.embedder import _get_model
+        from apps.ingestion._warmup import is_embedder_loaded
         from apps.qdrant_core.client import get_qdrant_client
 
-        embedder_loaded = _get_model.cache_info().currsize > 0
+        # Use the warmup flag (set after a successful forward pass) so the
+        # gRPC HealthCheck and HTTP /healthz report identical readiness.
+        embedder_loaded = is_embedder_loaded()
 
         qdrant_ok = False
         try:

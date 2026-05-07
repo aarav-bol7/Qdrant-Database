@@ -12,13 +12,9 @@ services:
     restart: "no"
 
   postgres:
-    ports:
-      - "5432:5432"
     restart: "no"
 
   redis:
-    ports:
-      - "6379:6379"
     restart: "no"
 
   worker:

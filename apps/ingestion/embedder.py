@@ -15,6 +15,16 @@ from typing import Any
 
 from django.conf import settings
 
+# Eager imports — must run at module load (single-threaded by Django) to
+# avoid an `accelerate` circular-import race that triggered HTTP 500s under
+# concurrent first-touch (warmup thread vs. first real request). See incident
+# 2026-05-07 (HTTP 500 storm with `AcceleratorState` ImportError on /v1/.../search).
+# Cost: ~3-8s of extra startup per gunicorn worker AND for management commands
+# (migrate / collectstatic / pytest); accepted in exchange for the simpler
+# invariant "the import always runs at module load, never under concurrency".
+from FlagEmbedding import BGEM3FlagModel  # noqa: E402
+from transformers import AutoTokenizer  # noqa: E402
+
 logger = logging.getLogger(__name__)
 
 DENSE_DIM = 1024
@@ -23,8 +33,6 @@ COLBERT_DIM = 1024
 
 @functools.lru_cache(maxsize=1)
 def _get_model() -> Any:
-    from FlagEmbedding import BGEM3FlagModel
-
     cfg = settings.BGE
     started = time.monotonic()
     logger.info(
@@ -57,8 +65,6 @@ def _get_model() -> Any:
 
 @functools.lru_cache(maxsize=1)
 def _get_tokenizer() -> Any:
-    from transformers import AutoTokenizer
-
     cfg = settings.BGE
     return AutoTokenizer.from_pretrained(
         cfg["MODEL_NAME"],

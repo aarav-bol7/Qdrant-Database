@@ -75,12 +75,17 @@ services:
       - "${HTTP_PORT:-8000}:8000"
     volumes:
       - ./.bge_cache:/app/.cache/bge
+    # Readiness gate: only mark healthy AFTER the BGE-M3 embedder has done one
+    # forward pass (warmup thread sets embedder_loaded=true). The first user
+    # request then lands on a warm model. start_period: 180s gives the warmup
+    # thread time to load the model on a cold disk; pulling weights from the
+    # bind-mounted host cache keeps it well under that.
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8000/healthz"]
-      interval: 15s
-      timeout: 10s
-      retries: 5
-      start_period: 120s
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/healthz | grep -q '\"embedder_loaded\": true' || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 180s
     restart: unless-stopped
     networks: [qdrant_rag_net]
 

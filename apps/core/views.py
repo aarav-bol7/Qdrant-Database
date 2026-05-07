@@ -73,15 +73,23 @@ def _ping_qdrant() -> str:
 
 
 def healthz(_request: HttpRequest) -> JsonResponse:
+    from apps.ingestion._warmup import is_embedder_loaded
+
     pg = _ping_postgres()
     qd = _ping_qdrant()
-    all_ok = pg == "ok" and qd == "ok"
+    embedder_ready = is_embedder_loaded()
+    em = "ok" if embedder_ready else "warming"
+    all_ok = pg == "ok" and qd == "ok" and embedder_ready
     body = {
-        "status": "ok" if all_ok else "degraded",
+        "status": "ok" if all_ok else ("warming" if pg == "ok" and qd == "ok" else "degraded"),
         "version": _VERSION,
         "components": {
             "postgres": pg,
             "qdrant": qd,
+            "embedder": em,
         },
+        # Explicit boolean for orchestrators / probes to parse without
+        # string-matching the components map.
+        "embedder_loaded": embedder_ready,
     }
     return JsonResponse(body, status=200 if all_ok else 503)
